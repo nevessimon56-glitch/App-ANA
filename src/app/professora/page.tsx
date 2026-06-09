@@ -26,7 +26,7 @@ export default async function TeacherDashboard() {
         where: {
           teacherId: session.id,
           scheduledAt: { gte: today, lt: tomorrow },
-          status: "AGENDADA",
+          status: { in: ["AGENDADA", "REMARCADA"] },
         },
         include: {
           student: { select: { name: true } },

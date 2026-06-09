@@ -17,7 +17,7 @@ export default async function StudentDashboard() {
       orderBy: { createdAt: "desc" },
     }),
     prisma.appointment.findFirst({
-      where: { studentId: session.id, status: "AGENDADA" },
+      where: { studentId: session.id, status: { in: ["AGENDADA", "REMARCADA"] } },
       orderBy: { scheduledAt: "asc" },
       include: { lesson: true, teacher: { select: { name: true } } },
     }),

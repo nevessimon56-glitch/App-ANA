@@ -61,12 +61,24 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = appointmentSchema.parse(body);
 
+    const scheduledAt = new Date(data.scheduledAt);
+    if (Number.isNaN(scheduledAt.getTime())) {
+      return NextResponse.json({ error: "Data ou hora inválida" }, { status: 400 });
+    }
+
+    const student = await prisma.studentProfile.findFirst({
+      where: { userId: data.studentId, teacherId: session.id },
+    });
+    if (!student) {
+      return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 });
+    }
+
     const appointment = await prisma.appointment.create({
       data: {
         teacherId: session.id,
         studentId: data.studentId,
-        lessonId: data.lessonId,
-        scheduledAt: new Date(data.scheduledAt),
+        lessonId: data.lessonId || null,
+        scheduledAt,
         durationMinutes: data.durationMinutes ?? 60,
         notes: data.notes,
       },

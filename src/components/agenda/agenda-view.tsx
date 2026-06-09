@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format, startOfWeek, endOfWeek, addDays, isSameDay } from "date-fns";
+import { format, addDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { STATUS_LABELS } from "@/lib/utils";
+import { datetimeLocalToIso, weekRangeIso } from "@/lib/dates";
+import { RescheduleDialog } from "@/components/agenda/reschedule-dialog";
 import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 
 type Appointment = {
@@ -34,6 +36,8 @@ const statusVariant: Record<string, "default" | "success" | "warning" | "danger"
   CANCELADA: "muted",
 };
 
+const UPCOMING_STATUSES = ["AGENDADA", "REMARCADA"];
+
 export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -41,23 +45,33 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
 
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const { from, to } = weekRangeIso(currentDate);
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const start = new Date(from);
+    return addDays(start, i);
+  });
 
   async function loadData() {
     setLoading(true);
-    const from = weekStart.toISOString();
-    const to = weekEnd.toISOString();
+    setError("");
 
     const [apptRes, studentsRes, lessonsRes] = await Promise.all([
-      fetch(`/api/appointments?from=${from}&to=${to}`),
+      fetch(`/api/appointments?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
       role === "TEACHER" ? fetch("/api/students") : Promise.resolve(null),
       role === "TEACHER" ? fetch("/api/lessons") : Promise.resolve(null),
     ]);
 
-    setAppointments(await apptRes.json());
+    if (!apptRes.ok) {
+      setError("Erro ao carregar agenda");
+      setLoading(false);
+      return;
+    }
+
+    const apptData = await apptRes.json();
+    setAppointments(Array.isArray(apptData) ? apptData : []);
     if (studentsRes) setStudents(await studentsRes.json());
     if (lessonsRes) setLessons(await lessonsRes.json());
     setLoading(false);
@@ -70,33 +84,74 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
 
   async function createAppointment(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
+    setError("");
 
-    await fetch("/api/appointments", {
+    const form = new FormData(e.currentTarget);
+    const scheduledAtRaw = String(form.get("scheduledAt") ?? "");
+    const lessonId = String(form.get("lessonId") ?? "");
+
+    const res = await fetch("/api/appointments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         studentId: form.get("studentId"),
-        lessonId: form.get("lessonId") || undefined,
-        scheduledAt: form.get("scheduledAt"),
+        lessonId: lessonId || undefined,
+        scheduledAt: datetimeLocalToIso(scheduledAtRaw),
         notes: form.get("notes"),
       }),
     });
 
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Erro ao agendar aula");
+      return;
+    }
+
+    const created = await res.json();
     setShowForm(false);
-    loadData();
+    e.currentTarget.reset();
+
+    // Ir para a semana da aula agendada
+    if (created.scheduledAt) {
+      setCurrentDate(new Date(created.scheduledAt));
+    } else {
+      loadData();
+    }
   }
 
   async function updateAppointment(
     id: string,
     data: Record<string, unknown>,
-  ) {
-    await fetch(`/api/appointments/${id}`, {
+  ): Promise<boolean> {
+    const res = await fetch(`/api/appointments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    loadData();
+
+    if (!res.ok) {
+      const body = await res.json();
+      setError(body.error ?? "Erro ao atualizar aula");
+      return false;
+    }
+
+    const updated = await res.json();
+    const newDate = updated.scheduledAt ?? updated.appointment?.scheduledAt;
+    if (newDate) {
+      setCurrentDate(new Date(newDate));
+    } else {
+      loadData();
+    }
+    return true;
+  }
+
+  async function handleReschedule(newDateIso: string) {
+    if (!rescheduleTarget) return;
+    await updateAppointment(rescheduleTarget.id, {
+      reschedule: true,
+      scheduledAt: newDateIso,
+    });
+    setRescheduleTarget(null);
   }
 
   return (
@@ -128,6 +183,10 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
           </Button>
         )}
       </div>
+
+      {error && (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+      )}
 
       {showForm && role === "TEACHER" && (
         <Card className="mb-6">
@@ -186,7 +245,7 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
             );
 
             return (
-              <Card key={day.toISOString()} className="min-h-[200px] p-3">
+              <Card key={day.toISOString()} className="min-h-[120px] p-3 sm:min-h-[200px]">
                 <p className="mb-3 text-center text-sm font-semibold text-slate-700">
                   {format(day, "EEE", { locale: ptBR })}
                   <br />
@@ -194,6 +253,9 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
                 </p>
 
                 <div className="space-y-2">
+                  {dayAppts.length === 0 && (
+                    <p className="text-center text-xs text-slate-400">Sem aulas</p>
+                  )}
                   {dayAppts.map((appt) => (
                     <div
                       key={appt.id}
@@ -216,43 +278,35 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
                       </Badge>
 
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {role === "TEACHER" && appt.status === "AGENDADA" && (
+                        {role === "TEACHER" && UPCOMING_STATUSES.includes(appt.status) && (
                           <>
                             <button
+                              type="button"
                               onClick={() =>
                                 updateAppointment(appt.id, { completeSession: true })
                               }
-                              className="rounded bg-emerald-100 p-1 text-emerald-700 hover:bg-emerald-200"
+                              className="rounded bg-emerald-100 p-1.5 text-emerald-700 hover:bg-emerald-200"
                               title="Marcar como realizada"
                             >
-                              <Check className="h-3 w-3" />
+                              <Check className="h-3.5 w-3.5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() =>
                                 updateAppointment(appt.id, { status: "FALTA" })
                               }
-                              className="rounded bg-red-100 p-1 text-red-700 hover:bg-red-200"
+                              className="rounded bg-red-100 p-1.5 text-red-700 hover:bg-red-200"
                               title="Registrar falta"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-3.5 w-3.5" />
                             </button>
                           </>
                         )}
-                        {(appt.status === "AGENDADA" || appt.status === "REMARCADA") && (
+                        {UPCOMING_STATUSES.includes(appt.status) && (
                           <button
-                            onClick={() => {
-                              const newDate = prompt(
-                                "Nova data e hora (AAAA-MM-DDTHH:MM):",
-                                format(new Date(appt.scheduledAt), "yyyy-MM-dd'T'HH:mm"),
-                              );
-                              if (newDate) {
-                                updateAppointment(appt.id, {
-                                  status: "REMARCADA",
-                                  scheduledAt: newDate,
-                                });
-                              }
-                            }}
-                            className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 hover:bg-amber-200"
+                            type="button"
+                            onClick={() => setRescheduleTarget(appt)}
+                            className="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 hover:bg-amber-200"
                           >
                             Remarcar
                           </button>
@@ -266,6 +320,13 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
           })}
         </div>
       )}
+
+      <RescheduleDialog
+        open={!!rescheduleTarget}
+        currentDateIso={rescheduleTarget?.scheduledAt ?? new Date().toISOString()}
+        onClose={() => setRescheduleTarget(null)}
+        onConfirm={handleReschedule}
+      />
     </div>
   );
 }

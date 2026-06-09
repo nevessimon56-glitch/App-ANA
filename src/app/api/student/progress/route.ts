@@ -36,7 +36,9 @@ export async function GET() {
   const stats = {
     totalClasses: appointments.filter((a) => a.status === "REALIZADA").length,
     missedClasses: appointments.filter((a) => a.status === "FALTA").length,
-    upcomingClasses: appointments.filter((a) => a.status === "AGENDADA").length,
+    upcomingClasses: appointments.filter((a) =>
+      ["AGENDADA", "REMARCADA"].includes(a.status),
+    ).length,
     totalExercises: exerciseLogs.length,
     currentScore: assessments.at(-1)?.score ?? 0,
     initialScore: assessments.at(0)?.score ?? 0,
