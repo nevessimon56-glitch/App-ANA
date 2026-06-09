@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DIFFICULTY_LABELS, STATUS_LABELS } from "@/lib/utils";
+import { ProgressChart } from "@/components/student/progress-chart";
 import { TrendingUp, Dumbbell, Calendar, AlertCircle } from "lucide-react";
 
 type ProgressData = {
@@ -21,6 +22,7 @@ type ProgressData = {
     id: string;
     score: number;
     notes?: string | null;
+    criteria?: string | null;
     createdAt: string;
     teacher: { name: string };
   }[];
@@ -111,6 +113,15 @@ export function ProgressView() {
           <p className="text-sm text-slate-500">
             Professora: <strong>{profile.teacher.name}</strong>
           </p>
+        </Card>
+      )}
+
+      {assessments.length > 0 && (
+        <Card>
+          <CardTitle>Evolução</CardTitle>
+          <div className="mt-4">
+            <ProgressChart assessments={assessments} />
+          </div>
         </Card>
       )}
 

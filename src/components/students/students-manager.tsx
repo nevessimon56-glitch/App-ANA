@@ -8,12 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  HEALTH_CONDITIONS,
+  getConditionLabel,
+  parseHealthConditions,
+} from "@/lib/health";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 
 type Student = {
   id: string;
   userId: string;
   notes?: string | null;
+  healthConditions?: string | null;
+  healthNotes?: string | null;
   user: { id: string; name: string; email: string; phone?: string | null };
   latestAssessment?: { score: number; createdAt: string } | null;
   appointmentCount: number;
@@ -38,7 +45,16 @@ export function StudentsManager() {
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [score, setScore] = useState("5");
+  const [useCriteria, setUseCriteria] = useState(true);
+  const [criteria, setCriteria] = useState({
+    postura: 5,
+    flexibilidade: 5,
+    forca: 5,
+    equilibrio: 5,
+  });
   const [assessmentNotes, setAssessmentNotes] = useState("");
+  const [healthConditions, setHealthConditions] = useState<string[]>([]);
+  const [healthNotes, setHealthNotes] = useState("");
   const [transferTeacherId, setTransferTeacherId] = useState("");
   const [transferReason, setTransferReason] = useState("");
   const [message, setMessage] = useState("");
@@ -61,18 +77,55 @@ export function StudentsManager() {
     load();
   }, []);
 
+  function selectStudent(student: Student) {
+    setSelectedStudent(student);
+    setMessage("");
+    setError("");
+    setHealthConditions(parseHealthConditions(student.healthConditions));
+    setHealthNotes(student.healthNotes ?? "");
+  }
+
+  async function saveHealth() {
+    if (!selectedStudent) return;
+    setError("");
+
+    const res = await fetch(`/api/students/${selectedStudent.userId}/health`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ healthConditions, healthNotes }),
+    });
+
+    if (!res.ok) {
+      setError("Erro ao salvar anamnese");
+      return;
+    }
+
+    setMessage("Ficha de saúde atualizada!");
+    load();
+  }
+
+  function toggleCondition(id: string) {
+    setHealthConditions((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
+    );
+  }
+
   async function saveAssessment() {
     if (!selectedStudent) return;
     setError("");
 
+    const payload = useCriteria
+      ? { studentId: selectedStudent.userId, criteria, notes: assessmentNotes }
+      : {
+          studentId: selectedStudent.userId,
+          score: parseFloat(score),
+          notes: assessmentNotes,
+        };
+
     const res = await fetch("/api/assessments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        studentId: selectedStudent.userId,
-        score: parseFloat(score),
-        notes: assessmentNotes,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -158,11 +211,7 @@ export function StudentsManager() {
                   ? "border-teal-300 ring-2 ring-teal-100"
                   : "hover:border-teal-100"
               }`}
-              onClick={() => {
-                setSelectedStudent(student);
-                setMessage("");
-                setError("");
-              }}
+              onClick={() => selectStudent(student)}
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -247,17 +296,108 @@ export function StudentsManager() {
             <h3 className="font-semibold text-slate-900">{selectedStudent.user.name}</h3>
 
             <div>
-              <p className="mb-2 text-sm font-medium text-slate-700">
-                Nova avaliação (0 a 10)
-              </p>
-              <Input
-                type="number"
-                min="0"
-                max="10"
-                step="0.5"
-                value={score}
-                onChange={(e) => setScore(e.target.value)}
+              <p className="mb-2 text-sm font-medium text-slate-700">Ficha de saúde (anamnese)</p>
+              <div className="flex flex-wrap gap-2">
+                {HEALTH_CONDITIONS.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => toggleCondition(c.id)}
+                    className={`rounded-full border px-2.5 py-1 text-xs font-medium ${
+                      healthConditions.includes(c.id)
+                        ? "border-teal-300 bg-teal-50 text-teal-800"
+                        : "border-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <Textarea
+                className="mt-2"
+                placeholder="Observações de saúde, lesões, medicamentos..."
+                value={healthNotes}
+                onChange={(e) => setHealthNotes(e.target.value)}
               />
+              <Button className="mt-2 w-full" size="sm" variant="secondary" onClick={saveHealth}>
+                Salvar ficha de saúde
+              </Button>
+              {healthConditions.length > 0 && (
+                <p className="mt-2 text-xs text-teal-700">
+                  Alertas ativos:{" "}
+                  {healthConditions.map((id) => getConditionLabel(id)).join(", ")}
+                </p>
+              )}
+            </div>
+
+            <hr className="border-teal-50" />
+
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-700">Nova avaliação</p>
+                <button
+                  type="button"
+                  onClick={() => setUseCriteria(!useCriteria)}
+                  className="text-xs text-teal-700 hover:underline"
+                >
+                  {useCriteria ? "Usar nota única" : "Usar critérios"}
+                </button>
+              </div>
+
+              {useCriteria ? (
+                <div className="space-y-3">
+                  {(
+                    [
+                      ["postura", "Postura"],
+                      ["flexibilidade", "Flexibilidade"],
+                      ["forca", "Força"],
+                      ["equilibrio", "Equilíbrio"],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <div key={key}>
+                      <div className="mb-1 flex justify-between text-xs text-slate-600">
+                        <span>{label}</span>
+                        <span>{criteria[key]}/10</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        step="0.5"
+                        value={criteria[key]}
+                        onChange={(e) =>
+                          setCriteria((prev) => ({
+                            ...prev,
+                            [key]: parseFloat(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-teal-700"
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-slate-500">
+                    Nota média:{" "}
+                    {(
+                      (criteria.postura +
+                        criteria.flexibilidade +
+                        criteria.forca +
+                        criteria.equilibrio) /
+                      4
+                    ).toFixed(1)}
+                    /10
+                  </p>
+                </div>
+              ) : (
+                <Input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.5"
+                  value={score}
+                  onChange={(e) => setScore(e.target.value)}
+                />
+              )}
+
               <Textarea
                 className="mt-2"
                 placeholder="Observações da avaliação..."

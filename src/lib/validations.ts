@@ -37,11 +37,18 @@ export const appointmentSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const assessmentCriteriaSchema = z.object({
+  postura: z.number().min(0).max(10),
+  flexibilidade: z.number().min(0).max(10),
+  forca: z.number().min(0).max(10),
+  equilibrio: z.number().min(0).max(10),
+});
+
 export const assessmentSchema = z.object({
   studentId: z.string(),
-  score: z.number().min(0).max(10),
+  score: z.number().min(0).max(10).optional(),
   notes: z.string().optional(),
-  criteria: z.string().optional(),
+  criteria: assessmentCriteriaSchema.optional(),
 });
 
 export const transferSchema = z.object({

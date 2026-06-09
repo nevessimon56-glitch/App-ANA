@@ -40,13 +40,26 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = assessmentSchema.parse(body);
 
+    let score = data.score;
+    let criteriaJson: string | undefined;
+
+    if (data.criteria) {
+      const c = data.criteria;
+      score = (c.postura + c.flexibilidade + c.forca + c.equilibrio) / 4;
+      criteriaJson = JSON.stringify(c);
+    }
+
+    if (score === undefined) {
+      return NextResponse.json({ error: "Informe a nota ou os critérios" }, { status: 400 });
+    }
+
     const assessment = await prisma.assessment.create({
       data: {
         studentId: data.studentId,
         teacherId: session.id,
-        score: data.score,
+        score,
         notes: data.notes,
-        criteria: data.criteria,
+        criteria: criteriaJson,
       },
       include: {
         student: { select: { id: true, name: true } },

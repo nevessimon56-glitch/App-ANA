@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardTitle } from "@/components/ui/card";
+import { APP_NAME } from "@/lib/brand";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-teal-50 to-white px-4">
       <Card className="w-full max-w-md">
-        <CardTitle>Entrar no App ANA</CardTitle>
+        <CardTitle>Entrar no {APP_NAME}</CardTitle>
         <p className="mt-1 text-sm text-slate-500">
           Acesse sua conta de professora ou aluno
         </p>

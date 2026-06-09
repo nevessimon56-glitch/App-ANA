@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { APP_NAME, APP_TAGLINE } from "@/lib/brand";
 import {
   Calendar,
   ClipboardList,
@@ -53,9 +54,9 @@ export default async function HomePage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-teal-700">
-            App ANA
+            {APP_NAME}
           </p>
-          <p className="text-xs text-slate-500">Pilates com autonomia</p>
+          <p className="text-xs text-slate-500">{APP_TAGLINE}</p>
         </div>
         <div className="flex gap-3">
           <Link href="/login">

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { APP_NAME } from "@/lib/brand";
 import {
   isNavActive,
   studentNav,
@@ -84,15 +85,15 @@ export function DashboardShell({
       <aside className="hidden w-64 shrink-0 flex-col border-r border-teal-100 bg-white lg:flex">
         <div className="border-b border-teal-100 px-5 py-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-teal-600">
-            App ANA
-          </p>
-          <p className="mt-1 text-sm font-medium text-slate-800">{userName}</p>
-          <p className="text-xs text-slate-500">
-            {role === "TEACHER" ? "Professora" : "Aluno"}
-          </p>
-        </div>
+          {APP_NAME}
+        </p>
+        <p className="mt-1 text-sm font-medium text-slate-800">{userName}</p>
+        <p className="text-xs text-slate-500">
+          {role === "TEACHER" ? "Professora" : "Aluno"}
+        </p>
+      </div>
 
-        <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 p-3">
           {nav.map((item) => (
             <NavLink key={item.href} item={item} pathname={pathname} />
           ))}
@@ -113,7 +114,7 @@ export function DashboardShell({
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-teal-100 bg-white px-4 py-3 lg:hidden">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-teal-600">
-            App ANA
+            {APP_NAME}
           </p>
           <p className="text-sm font-medium text-slate-800">{userName}</p>
         </div>
