@@ -6,8 +6,8 @@ Siga estes passos **uma única vez**. No final você terá um link público (ex.
 
 ## Antes de começar
 
-1. O código precisa estar na branch **main** do GitHub.  
-   Se ainda não fez merge do PR, abra o PR e clique em **Merge** antes de continuar.
+1. Use a branch **`cursor/pilates-platform-mvp-f983`** (é onde está o app hoje).  
+   Depois que fizer merge do PR na `main`, pode usar a `main` também.
 
 2. Crie uma conta gratuita em **[render.com](https://render.com)** (pode entrar com GitHub).
 
@@ -21,7 +21,8 @@ Siga estes passos **uma única vez**. No final você terá um link público (ex.
 2. Clique em **New +** → **Blueprint**
 3. Conecte sua conta do GitHub se ainda não conectou
 4. Selecione o repositório **App-ANA**
-5. O Render vai detectar o arquivo `render.yaml` — clique em **Apply**
+5. Em **Branch**, escolha **`cursor/pilates-platform-mvp-f983`**
+6. O Render vai detectar o arquivo `render.yaml` — clique em **Apply**
 
 ### 2. Aguardar o deploy
 
@@ -83,8 +84,11 @@ Abre no celular ou no computador. Qualquer dúvida me fala!
 ### Plano gratuito “dorme”
 No plano free do Render, se ninguém acessar por ~15 minutos, o site “hiberna”. A **primeira abertura** depois disso pode demorar **30–60 segundos** — é normal. Avise quem for testar.
 
+### Dados no plano gratuito
+No plano free **não há disco persistente**. Os dados de demonstração são recriados a cada deploy. Para uso real com muitos alunos, será preciso um plano pago ou outro serviço de banco.
+
 ### Vídeos enviados
-Vídeos que a professora fizer upload ficam salvos no servidor. No plano gratuito isso funciona, mas o espaço é limitado (1 GB de disco).
+Vídeos enviados pela professora podem ser perdidos se o app for atualizado/reiniciado no plano gratuito.
 
 ### Atualizar o app depois
 Sempre que você fizer merge de mudanças na branch `main`, o Render **atualiza sozinho** em alguns minutos.

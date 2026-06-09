@@ -1,5 +1,6 @@
-# Deploy em um clique no Render: https://render.com
+# Deploy no Render (plano gratuito — sem disco persistente)
 # New > Blueprint > conecte o repositório App-ANA
+# Branch: cursor/pilates-platform-mvp-f983 (ou main, após merge do PR)
 
 services:
   - type: web
@@ -13,10 +14,6 @@ services:
       - key: NODE_VERSION
         value: "22"
       - key: DATABASE_URL
-        value: file:/data/dev.db
+        value: file:./dev.db
       - key: JWT_SECRET
         generateValue: true
-    disk:
-      name: app-ana-data
-      mountPath: /data
-      sizeGB: 1
