@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         where: {
           studentId: data.studentId,
           teacherId: session.id,
-          status: "AGENDADA",
+          status: { in: ["AGENDADA", "REMARCADA"] },
         },
         data: { teacherId: data.toTeacherId },
       });
