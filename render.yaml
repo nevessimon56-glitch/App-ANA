@@ -1,0 +1,23 @@
+# Deploy no Render (plano gratuito — sem disco persistente)
+# New > Blueprint > conecte o repositório App-ANA
+# Branch: cursor/pilates-platform-mvp-f983 (ou main, após merge do PR)
+
+services:
+  - type: web
+    name: app-ana
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build && npm run db:seed
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        value: file:./dev.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_APP_NAME
+        value: App ANA
+      - key: NEXT_PUBLIC_APP_TAGLINE
+        value: Pilates com autonomia

@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum Difficulty {
+  INICIANTE
+  INTERMEDIARIO
+  AVANCADO
+}
+
+enum AppointmentStatus {
+  AGENDADA
+  REALIZADA
+  FALTA
+  REMARCADA
+  CANCELADA
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  exercisesCreated    Exercise[]        @relation("TeacherExercises")
+  lessonsCreated      Lesson[]          @relation("TeacherLessons")
+  teacherAppointments Appointment[]     @relation("TeacherAppointments")
+  assessmentsGiven    Assessment[]      @relation("TeacherAssessments")
+  studentsTaught      StudentProfile[]  @relation("StudentTeacher")
+
+  studentProfile        StudentProfile?
+  studentAppointments   Appointment[]     @relation("StudentAppointments")
+  assessmentsReceived   Assessment[]      @relation("StudentAssessments")
+  exerciseLogs          ExerciseLog[]
+  transfersFrom         StudentTransfer[] @relation("TransferFrom")
+  transfersTo           StudentTransfer[] @relation("TransferTo")
+  transfersAsStudent    StudentTransfer[] @relation("TransferredStudent")
+}
+
+model StudentProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherId        String
+  teacher          User     @relation("StudentTeacher", fields: [teacherId], references: [id])
+  notes            String?
+  healthConditions String?
+  healthNotes      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Exercise {
+  id                String     @id @default(cuid())
+  name              String
+  description       String?
+  videoUrl          String?
+  difficulty        Difficulty @default(INICIANTE)
+  muscles           String
+  contraindications String?
+  benefits          String?
+  teacherId         String
+  teacher           User       @relation("TeacherExercises", fields: [teacherId], references: [id])
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  lessonExercises LessonExercise[]
+  exerciseLogs    ExerciseLog[]
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  teacherId   String
+  teacher     User     @relation("TeacherLessons", fields: [teacherId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exercises    LessonExercise[]
+  appointments Appointment[]
+}
+
+model LessonExercise {
+  id         String   @id @default(cuid())
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  order      Int
+  notes      String?
+
+  @@unique([lessonId, order])
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  teacherId       String
+  teacher         User              @relation("TeacherAppointments", fields: [teacherId], references: [id])
+  studentId       String
+  student         User              @relation("StudentAppointments", fields: [studentId], references: [id])
+  lessonId        String?
+  lesson          Lesson?           @relation(fields: [lessonId], references: [id])
+  scheduledAt     DateTime
+  durationMinutes Int               @default(60)
+  status          AppointmentStatus @default(AGENDADA)
+  notes           String?
+  rescheduledFrom String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  sessionLogs SessionLog[]
+}
+
+model SessionLog {
+  id            String      @id @default(cuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  completedAt   DateTime    @default(now())
+  teacherNotes  String?
+
+  exerciseLogs ExerciseLog[]
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   User     @relation("StudentAssessments", fields: [studentId], references: [id])
+  teacherId String
+  teacher   User     @relation("TeacherAssessments", fields: [teacherId], references: [id])
+  score     Float
+  notes     String?
+  criteria  String?
+  createdAt DateTime @default(now())
+}
+
+model ExerciseLog {
+  id          String      @id @default(cuid())
+  studentId   String
+  student     User        @relation(fields: [studentId], references: [id])
+  exerciseId  String
+  exercise    Exercise    @relation(fields: [exerciseId], references: [id])
+  sessionId   String?
+  session     SessionLog? @relation(fields: [sessionId], references: [id])
+  completed   Boolean     @default(true)
+  difficulty  String?
+  notes       String?
+  completedAt DateTime    @default(now())
+}
+
+model StudentTransfer {
+  id            String   @id @default(cuid())
+  studentUserId String
+  student       User     @relation("TransferredStudent", fields: [studentUserId], references: [id])
+  fromTeacherId String
+  fromTeacher   User     @relation("TransferFrom", fields: [fromTeacherId], references: [id])
+  toTeacherId   String
+  toTeacher     User     @relation("TransferTo", fields: [toTeacherId], references: [id])
+  reason        String?
+  transferredAt DateTime @default(now())
+}
