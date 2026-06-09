@@ -41,6 +41,12 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000).
 
+## Publicar para testar no celular
+
+Para gerar um **link público** que qualquer pessoa abre no celular, siga o guia:
+
+👉 **[DEPLOY.md](./DEPLOY.md)** — passo a passo no Render (gratuito)
+
 ## Contas de demonstração
 
 | Perfil | E-mail | Senha |

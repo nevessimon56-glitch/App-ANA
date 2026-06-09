@@ -1,0 +1,22 @@
+# Deploy em um clique no Render: https://render.com
+# New > Blueprint > conecte o repositório App-ANA
+
+services:
+  - type: web
+    name: app-ana
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build && npm run db:seed
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        value: file:/data/dev.db
+      - key: JWT_SECRET
+        generateValue: true
+    disk:
+      name: app-ana-data
+      mountPath: /data
+      sizeGB: 1
