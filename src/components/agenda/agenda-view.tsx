@@ -101,8 +101,8 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-center gap-2 sm:justify-start">
           <Button
             variant="ghost"
             size="sm"
@@ -110,7 +110,7 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-lg font-semibold capitalize text-slate-800">
+          <h2 className="text-base font-semibold capitalize text-slate-800 sm:text-lg">
             {format(currentDate, "MMMM yyyy", { locale: ptBR })}
           </h2>
           <Button
@@ -123,7 +123,7 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
         </div>
 
         {role === "TEACHER" && (
-          <Button onClick={() => setShowForm(!showForm)}>
+          <Button className="w-full sm:w-auto" onClick={() => setShowForm(!showForm)}>
             {showForm ? "Cancelar" : "Agendar aula"}
           </Button>
         )}
@@ -179,7 +179,7 @@ export function AgendaView({ role }: { role: "TEACHER" | "STUDENT" }) {
       {loading ? (
         <p className="text-slate-500">Carregando agenda...</p>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-7">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-7">
           {weekDays.map((day) => {
             const dayAppts = appointments.filter((a) =>
               isSameDay(new Date(a.scheduledAt), day),

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { Sidebar } from "@/components/layout/sidebar";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export default async function StudentLayout({
   children,
@@ -12,9 +12,8 @@ export default async function StudentLayout({
   if (session.role !== "STUDENT") redirect("/professora");
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf9]">
-      <Sidebar role="STUDENT" userName={session.name} />
-      <main className="flex-1 overflow-auto p-6 lg:p-8">{children}</main>
-    </div>
+    <DashboardShell role="STUDENT" userName={session.name}>
+      {children}
+    </DashboardShell>
   );
 }

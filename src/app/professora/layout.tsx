@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { Sidebar } from "@/components/layout/sidebar";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export default async function TeacherLayout({
   children,
@@ -12,9 +12,8 @@ export default async function TeacherLayout({
   if (session.role !== "TEACHER") redirect("/aluno");
 
   return (
-    <div className="flex min-h-screen bg-[#f8faf9]">
-      <Sidebar role="TEACHER" userName={session.name} />
-      <main className="flex-1 overflow-auto p-6 lg:p-8">{children}</main>
-    </div>
+    <DashboardShell role="TEACHER" userName={session.name}>
+      {children}
+    </DashboardShell>
   );
 }
